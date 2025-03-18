@@ -77,17 +77,12 @@ class LocresFile:
         """Remove a namespace from the file"""
         del self.namespaces[name]
                 
-                
-
-class LocresReader(LocresFile):
-    def __init__(self, path):
+            
+    def read(self, path):
         """Read a .locres file and fill the file object with the namespaces and entries
     
         :param path: The path to the .locres file
         """
-        
-        super().__init__()
-        
         self.reader = Reader(path)
         self._read_header()
         
@@ -151,8 +146,7 @@ class LocresReader(LocresFile):
                     namespace.add(entry)
                     
         
-class LocresWriter(LocresFile):
-    def __init__(self, path):
+    def write(self, path):
         """Write the contents of the LocresFile to a .locres file.
 
         :param path: The path to the .locres file to write to
