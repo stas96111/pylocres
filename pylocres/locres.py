@@ -2,9 +2,9 @@
 from typing import Iterator
 from enum import Enum
 
-from city_hash import CityHash
-from crc_hash import str_crc32
-from file_io import Reader, Writer
+from .city_hash import CityHash
+from .crc_hash import str_crc32
+from .file_io import Reader, Writer
 
 LOCRES_MAGIC = b'\x0E\x14\x74\x75\x67\x4A\x03\xFC\x4A\x15\x90\x9D\xC3\x37\x7F\x1B'
 
@@ -76,12 +76,18 @@ class LocresFile:
     def remove(self, name: str):
         """Remove a namespace from the file"""
         del self.namespaces[name]
-        
-    def read(self, path):
+                
+                
+
+class LocresReader(LocresFile):
+    def __init__(self, path):
         """Read a .locres file and fill the file object with the namespaces and entries
     
         :param path: The path to the .locres file
         """
+        
+        super().__init__()
+        
         self.reader = Reader(path)
         self._read_header()
         
@@ -144,13 +150,14 @@ class LocresFile:
                     entry = Entry(string_key, translation, source_string_hash)
                     namespace.add(entry)
                     
-                    
         
-    def write(self, path):
+class LocresWriter(LocresFile):
+    def __init__(self, path):
         """Write the contents of the LocresFile to a .locres file.
 
         :param path: The path to the .locres file to write to
         """
+        super().__init__()
         
         self.writer = Writer(path)
         
