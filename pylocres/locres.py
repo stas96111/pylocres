@@ -2,9 +2,9 @@
 from typing import Iterator
 from enum import Enum
 
-import city_hash
+from city_hash import CityHash
 from crc_hash import str_crc32
-from file_io import Reader
+from file_io import Reader, Writer
 
 LOCRES_MAGIC = b'\x0E\x14\x74\x75\x67\x4A\x03\xFC\x4A\x15\x90\x9D\xC3\x37\x7F\x1B'
 
@@ -20,6 +20,8 @@ class Entry():
         self.key = key
         self.translation = translation
         self.hash =  value if is_hash else str_crc32(value)
+        
+        self._string_index = None
         
 
 class Namespace():
@@ -68,12 +70,18 @@ class LocresFile:
         return self.namespaces[index]
         
     def add(self, entry: Namespace):
+        """Add a namespace to the file"""
         self.namespaces[entry.name] = entry
         
     def remove(self, name: str):
+        """Remove a namespace from the file"""
         del self.namespaces[name]
         
     def read(self, path):
+        """Read a .locres file and fill the file object with the namespaces and entries
+    
+        :param path: The path to the .locres file
+        """
         self.reader = Reader(path)
         self._read_header()
         
@@ -81,6 +89,7 @@ class LocresFile:
             self._read_strings()
         
         self._read_keys()
+        self.reader.close()
         
     def _read_header(self):
         if self.reader.read(16) == LOCRES_MAGIC:
@@ -134,4 +143,52 @@ class LocresFile:
                     translation = self.reader.string()
                     entry = Entry(string_key, translation, source_string_hash)
                     namespace.add(entry)
+                    
+                    
+        
+    def write(self, path):
+        """Write the contents of the LocresFile to a .locres file.
+
+        :param path: The path to the .locres file to write to
+        """
+        
+        self.writer = Writer(path)
+        
+        self._write_header()
+        self._make_string_dict()
+        if self.version.value == Version.Legacy.value:
+            self._save_legacy()
+            self.writer.close()
     
+    def _write_header(self):
+        if self.version.value >= Version.Compact.value:
+            self.writer.write(LOCRES_MAGIC)
+            self.writer.uint(self.version.value)
+            self.writer.write(b'\x00' * 8)
+            
+    def _make_string_dict(self):
+        self._strings = {}
+        string_count = 0
+        
+        for namespace in self:
+            for entry in namespace:
+                string = entry.translation
+                
+                if entry.translation in self._strings:
+                    self._strings[string][0] += 1
+                else:
+                    self._strings.update({string: [1, string_count]})
+                    string_count += 1
+        
+        for namespace in self:
+            for entry in namespace:
+                entry._string_index = self._strings[entry.translation][1]
+            
+            
+locres = LocresFile()
+namespace = Namespace("Test")
+entry = Entry("key", "translation", "hash")
+namespace.add(entry)
+locres.add(namespace)
+
+locres.write(r"C:\Users\Stas\Documents\GitHub\PYLocres\tests\test.locres")

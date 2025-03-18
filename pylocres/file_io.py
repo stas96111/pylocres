@@ -44,3 +44,46 @@ class Reader:
     
     def close(self):
         self.file.close()
+        
+        
+class Writer:
+    def __init__(self, path):
+        self.file = open(path, "wb")
+        
+    def set_pos(self, position: int, end=False):
+        self.file.seek(-position if end else position)
+        
+    def write(self, data):
+        self.file.write(data)
+        
+    def uint(self, value: int):
+        self.file.write(value.to_bytes(1, 'little'))
+        
+    def uint32(self, value: int):
+        self.file.write(value.to_bytes(4, 'little'))
+        
+    def uint64(self, value: int):
+        self.file.write(value.to_bytes(8, 'little'))
+        
+    def int(self, value: int):
+        self.file.write(value.to_bytes(1, 'little', signed=True))
+
+    def int32(self, value: int):
+        self.file.write(value.to_bytes(4, 'little', signed=True))
+        
+    def int64(self, value: int):
+        self.file.write(value.to_bytes(8, 'little', signed=True))
+        
+    def string(self, value: str, use_unicode=False):
+        value += '\x00'
+
+        if (not use_unicode) and _is_ascii(value):
+            self.uint32(len(value))
+            self.write(value.encode("ascii"))
+        else:
+            length = int(len(value.encode("utf-16le")) / 2 * -1)
+            self.int32(length)
+            self.write(value.encode("utf-16le"))
+            
+    def close(self):
+        self.file.close()
