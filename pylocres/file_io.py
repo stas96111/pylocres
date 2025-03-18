@@ -4,6 +4,9 @@ def _is_ascii(s):
 class Reader:
     def __init__(self, filename: str):
         self.file = open(filename, 'rb')
+        
+    def get_pos(self):
+        return self.file.tell()
     
     def set_pos(self, position: int, end=False):
         self.file.seek(-position if end else position)
@@ -49,6 +52,9 @@ class Reader:
 class Writer:
     def __init__(self, path):
         self.file = open(path, "wb")
+        
+    def get_pos(self):
+        return self.file.tell()
         
     def set_pos(self, position: int, end=False):
         self.file.seek(-position if end else position)

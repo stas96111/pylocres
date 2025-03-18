@@ -159,6 +159,9 @@ class LocresFile:
         if self.version.value == Version.Legacy.value:
             self._save_legacy()
             self.writer.close()
+            return
+        self._write_keys()
+        self._write_text()
     
     def _write_header(self):
         if self.version.value >= Version.Compact.value:
@@ -183,12 +186,58 @@ class LocresFile:
         for namespace in self:
             for entry in namespace:
                 entry._string_index = self._strings[entry.translation][1]
+                
+    def _write_keys(self):
+        keys_count = 0
+        for namespace in self:
+            keys_count += len(namespace)
+        if self.version.value >= Version.Optimized.value:
+            self.writer.uint32(keys_count)
+        self.writer.uint32(len(self))
+        
+        for namespace in self:
+            if self.version.value == Version.CityHash.value:
+                namespace_hash = CityHash.city_hash_64_utf16_to_uint32(namespace.name)
+                self.writer.uint32(namespace_hash)
+            elif self.version.value >= Version.Optimized.value:
+                namespace_hash = str_crc32(namespace.name)
+                self.writer.uint32(namespace_hash)
+                
+            self.writer.string(namespace.name)
+            self.writer.uint32(len(namespace))
             
-            
-locres = LocresFile()
-namespace = Namespace("Test")
-entry = Entry("key", "translation", "hash")
-namespace.add(entry)
-locres.add(namespace)
-
-locres.write(r"C:\Users\Stas\Documents\GitHub\PYLocres\tests\test.locres")
+            for entry in namespace:
+                if self.version.value == Version.CityHash.value:
+                    self.writer.uint32(CityHash.city_hash_64_utf16_to_uint32(entry.key))
+                elif self.version.value >= Version.Optimized.value:
+                    self.writer.uint32(str_crc32(entry.key))
+                    
+                self.writer.string(entry.key)
+                self.writer.uint32(int(entry.hash))
+                self.writer.uint32(entry._string_index)
+                
+    def _write_text(self):
+        temp = self.writer.get_pos()
+        self.writer.set_pos(17)
+        self.writer.uint64(temp)
+        self.writer.set_pos(temp)
+        self.writer.uint32(len(self._strings))
+        
+        if self.version.value >= Version.Optimized.value:
+            for string in self._strings:
+                self.writer.string(string)
+                self.writer.uint32(self._strings[string][0])
+        else:
+            for string in self._strings:
+                self.writer.string(string)
+                
+    def _save_legacy(self):
+        self.writer.uint32(len(self))
+        
+        for namespace in self:
+            self.writer.string(namespace.name, use_unicode=True)
+            self.writer.uint32(len(namespace))
+            for entry in namespace:
+                self.writer.string(entry.key)
+                self.writer.uint32(entry.hash)
+                self.writer.string(entry.translation)
