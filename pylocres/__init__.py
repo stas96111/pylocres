@@ -1,1 +1,0 @@
-from locres import LocresFile, LocresReader, LocresWriter, Namespace, Entry, Version 

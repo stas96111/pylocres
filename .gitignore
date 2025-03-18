@@ -5,7 +5,7 @@ __pycache__/
 
 # C extensions
 *.so
-
+*.pypirc
 # Distribution / packaging
 .Python
 build/
@@ -145,7 +145,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-
+.dist/
 # pytype static type analyzer
 .pytype/
 

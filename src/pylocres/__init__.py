@@ -1,0 +1,1 @@
+from .locres import LocresFile, Namespace, Entry, Version 
