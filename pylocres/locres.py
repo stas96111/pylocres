@@ -83,6 +83,11 @@ class LocresFile:
     
         :param path: The path to the .locres file
         """
+        
+        self.namespaces = {}
+        self._offset = None
+        self._strings = []
+        
         self.reader = Reader(path)
         self._read_header()
         
@@ -242,3 +247,6 @@ class LocresFile:
                 self.writer.string(entry.key)
                 self.writer.uint32(entry.hash)
                 self.writer.string(entry.translation)
+                
+    def entry_hash(text):
+        return CityHash.city_hash_64_utf16_to_uint32(text)
