@@ -17,11 +17,17 @@ class Reader:
     def uint32(self):
         return int.from_bytes(self.file.read(4), byteorder='little')
     
+    def uint64(self):
+        return int.from_bytes(self.file.read(8), byteorder='little')
+    
     def int(self):
         return int.from_bytes(self.file.read(1), byteorder='little', signed=True)
     
     def int32(self):
         return int.from_bytes(self.file.read(4), byteorder='little', signed=True)
+    
+    def int64(self):
+        return int.from_bytes(self.file.read(8), byteorder='little', signed=True)
     
     def string(self):
         length = self.int32()

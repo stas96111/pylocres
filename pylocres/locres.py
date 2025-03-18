@@ -54,6 +54,7 @@ class LocresFile:
         self.namespaces = {}
         
         self._offset = None
+        self._strings = []
         
     def __iter__(self) -> Iterator[Namespace]:
         return iter(self.namespaces.values())
@@ -77,16 +78,26 @@ class LocresFile:
         self._read_header()
         
         if self.version.value >= Version.Compact.value:
-            pass
+            self._read_strings()
         
         self._read_keys()
         
     def _read_header(self):
         if self.reader.read(16) == LOCRES_MAGIC:
             self.version = Version(self.reader.uint())
-            self._offset = self.reader.uint32()
+            self._offset = self.reader.uint64()
         else:
             self.version = Version.Legacy
+        
+    def _read_strings(self):
+        self.reader.set_pos(self._offset)
+        string_count = self.reader.uint32()
+        
+        for i in range(string_count):
+            string = self.reader.string()
+            if self.version.value >= Version.Optimized.value:
+                string_count = self.reader.uint32()
+            self._strings.append(string)
             
     def _read_keys(self):
         if self.version.value == Version.Legacy.value:
@@ -96,7 +107,7 @@ class LocresFile:
             self.reader.set_pos(25)
             
         if self.version.value >= Version.Optimized.value:
-            pass
+            entrys_count = self.reader.uint32()
         
         namespace_count = self.reader.uint32()
         
@@ -116,17 +127,11 @@ class LocresFile:
                 source_string_hash = self.reader.uint32()
                 
                 if self.version.value >= Version.Compact.value:
-                    pass
+                    string_index = self.reader.uint32()
+                    entry = Entry(string_key, self._strings[string_index], source_string_hash)
+                    namespace.add(entry)
                 else:
                     translation = self.reader.string()
                     entry = Entry(string_key, translation, source_string_hash)
                     namespace.add(entry)
     
-
-        
-locres = LocresFile()
-locres.read(r"C:\Users\Stas\Documents\GitHub\PYLocres\tests\legacy.locres")
-
-for namespace in locres:
-    for entry in namespace:
-        print(entry.key)
