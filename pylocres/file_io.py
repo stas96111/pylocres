@@ -2,7 +2,6 @@ def _is_ascii(s):
     return all(ord(c) < 128 for c in s)
 
 class Reader:
-    
     def __init__(self, filename: str):
         self.file = open(filename, 'rb')
     
@@ -35,5 +34,7 @@ class Reader:
         elif length == 0:
             string = ""
             
-        return string.rstrip('\0')   
+        return string.rstrip('\0')
     
+    def close(self):
+        self.file.close()
