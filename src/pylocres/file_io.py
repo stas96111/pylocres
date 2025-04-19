@@ -1,9 +1,14 @@
+from io import BytesIO
+
 def _is_ascii(s):
     return all(ord(c) < 128 for c in s)
 
 class Reader:
-    def __init__(self, filename: str):
-        self.file = open(filename, 'rb')
+    def __init__(self, file):
+        if isinstance(file, str):
+            self.file = open(file, 'rb')
+        elif isinstance(file, bytes):
+            self.file = BytesIO(file)
         
     def get_pos(self):
         return self.file.tell()

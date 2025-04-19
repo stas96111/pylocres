@@ -1,4 +1,3 @@
-
 from typing import Iterator
 from enum import Enum
 
@@ -77,8 +76,7 @@ class LocresFile:
         """Remove a namespace from the file"""
         del self.namespaces[name]
                 
-            
-    def read(self, path):
+    def read(self, file):
         """Read a .locres file and fill the file object with the namespaces and entries
     
         :param path: The path to the .locres file
@@ -88,7 +86,7 @@ class LocresFile:
         self._offset = None
         self._strings = []
         
-        self.reader = Reader(path)
+        self.reader = Reader(file)
         self._read_header()
         
         if self.version.value >= Version.Compact.value:
@@ -247,6 +245,6 @@ class LocresFile:
                 self.writer.string(entry.key)
                 self.writer.uint32(entry.hash)
                 self.writer.string(entry.translation)
-                
-    def entry_hash(text):
-        return CityHash.city_hash_64_utf16_to_uint32(text)
+                          
+def entry_hash(text):
+    return CityHash.city_hash_64_utf16_to_uint32(text)
