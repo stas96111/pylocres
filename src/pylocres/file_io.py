@@ -50,6 +50,15 @@ class Reader:
             
         return string.rstrip('\0')
     
+    def strings_list(self, length=None):
+        return self.list(self.string, length=length)
+    
+    def list(self, func, length=None):
+        if not length:
+            length = self.uint32()
+        out_list = [func() for i in range(length)]
+        return out_list
+    
     def close(self):
         self.file.close()
         
@@ -87,7 +96,6 @@ class Writer:
         
     def string(self, value: str, use_unicode=False):
         value += '\x00'
-
         if (not use_unicode) and _is_ascii(value):
             self.uint32(len(value))
             self.write(value.encode("ascii"))
@@ -96,5 +104,18 @@ class Writer:
             self.int32(length)
             self.write(value.encode("utf-16le"))
             
+    def list(self, list_items, use_length=False):
+        if use_length:
+            self.uint32(len(list_items))
+        for item in list_items:
+            self.write(item)
+            
+    def strings_list(self, list_items, use_length=False):
+        if use_length:
+            print("Length: ", len(list_items))
+            self.uint32(len(list_items))
+        for item in list_items:
+            self.string(item)
+        
     def close(self):
         self.file.close()

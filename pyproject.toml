@@ -17,5 +17,8 @@ classifiers = [
 ]
 license = {file = "LICENSE"}
 
+[tool.setuptools]
+license-files = []
+
 [project.urls]
 Homepage = "https://github.com/stas96111/pylocres"

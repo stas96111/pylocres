@@ -6,12 +6,6 @@ from .crc_hash import str_crc32
 from .file_io import Reader, Writer
 
 LOCRES_MAGIC = b'\x0E\x14\x74\x75\x67\x4A\x03\xFC\x4A\x15\x90\x9D\xC3\x37\x7F\x1B'
-
-class Version(Enum):
-    Legacy = 0
-    Compact = 1
-    Optimized = 2
-    CityHash = 3
         
         
 class Entry():
@@ -50,8 +44,14 @@ class Namespace():
         
         
 class LocresFile:
+    class Version(Enum):
+        Legacy = 0
+        Compact = 1
+        Optimized = 2
+        CityHash = 3
+    
     def __init__(self):
-        self.version = Version.CityHash
+        self.version = self.self.Version.CityHash
         self.namespaces = {}
         
         self._offset = None
@@ -89,7 +89,7 @@ class LocresFile:
         self.reader = Reader(file)
         self._read_header()
         
-        if self.version.value >= Version.Compact.value:
+        if self.self.Version.value >= self.Version.Compact.value:
             self._read_strings()
         
         self._read_keys()
@@ -97,10 +97,10 @@ class LocresFile:
         
     def _read_header(self):
         if self.reader.read(16) == LOCRES_MAGIC:
-            self.version = Version(self.reader.uint())
+            self.version = self.Version(self.reader.uint())
             self._offset = self.reader.uint64()
         else:
-            self.version = Version.Legacy
+            self.version = self.Version.Legacy
         
     def _read_strings(self):
         self.reader.set_pos(self._offset)
@@ -108,24 +108,24 @@ class LocresFile:
         
         for i in range(string_count):
             string = self.reader.string()
-            if self.version.value >= Version.Optimized.value:
+            if self.self.Version.value >= self.Version.Optimized.value:
                 string_count = self.reader.uint32()
             self._strings.append(string)
             
     def _read_keys(self):
-        if self.version.value == Version.Legacy.value:
+        if self.self.Version.value == self.Version.Legacy.value:
             self.reader.set_pos(0)
         
-        if self.version.value >= Version.Compact.value:
+        if self.self.Version.value >= self.Version.Compact.value:
             self.reader.set_pos(25)
             
-        if self.version.value >= Version.Optimized.value:
+        if self.self.Version.value >= self.Version.Optimized.value:
             entrys_count = self.reader.uint32()
         
         namespace_count = self.reader.uint32()
         
         for i in range(namespace_count):
-            if self.version.value >= Version.Optimized.value:
+            if self.self.Version.value >= self.Version.Optimized.value:
                 namespace_key_hash = self.reader.uint32()
                 
             namespace = Namespace(self.reader.string())
@@ -133,13 +133,13 @@ class LocresFile:
             key_count = self.reader.uint32()
             
             for j in range(key_count):
-                if self.version.value >= Version.Optimized.value:
+                if self.self.Version.value >= self.Version.Optimized.value:
                     string_key_hash = self.reader.uint32()
                     
                 string_key = self.reader.string()
                 source_string_hash = self.reader.uint32()
                 
-                if self.version.value >= Version.Compact.value:
+                if self.self.Version.value >= self.Version.Compact.value:
                     string_index = self.reader.uint32()
                     entry = Entry(string_key, self._strings[string_index], source_string_hash)
                     namespace.add(entry)
@@ -160,7 +160,7 @@ class LocresFile:
         
         self._write_header()
         self._make_string_dict()
-        if self.version.value == Version.Legacy.value:
+        if self.self.Version.value == self.Version.Legacy.value:
             self._save_legacy()
             self.writer.close()
             return
@@ -168,9 +168,9 @@ class LocresFile:
         self._write_text()
     
     def _write_header(self):
-        if self.version.value >= Version.Compact.value:
+        if self.self.Version.value >= self.Version.Compact.value:
             self.writer.write(LOCRES_MAGIC)
-            self.writer.uint(self.version.value)
+            self.writer.uint(self.self.Version.value)
             self.writer.write(b'\x00' * 8)
             
     def _make_string_dict(self):
@@ -195,15 +195,15 @@ class LocresFile:
         keys_count = 0
         for namespace in self:
             keys_count += len(namespace)
-        if self.version.value >= Version.Optimized.value:
+        if self.self.Version.value >= self.Version.Optimized.value:
             self.writer.uint32(keys_count)
         self.writer.uint32(len(self))
         
         for namespace in self:
-            if self.version.value == Version.CityHash.value:
+            if self.self.Version.value == self.Version.CityHash.value:
                 namespace_hash = CityHash.city_hash_64_utf16_to_uint32(namespace.name)
                 self.writer.uint32(namespace_hash)
-            elif self.version.value >= Version.Optimized.value:
+            elif self.self.Version.value >= self.Version.Optimized.value:
                 namespace_hash = str_crc32(namespace.name)
                 self.writer.uint32(namespace_hash)
                 
@@ -211,9 +211,9 @@ class LocresFile:
             self.writer.uint32(len(namespace))
             
             for entry in namespace:
-                if self.version.value == Version.CityHash.value:
+                if self.self.Version.value == self.Version.CityHash.value:
                     self.writer.uint32(CityHash.city_hash_64_utf16_to_uint32(entry.key))
-                elif self.version.value >= Version.Optimized.value:
+                elif self.self.Version.value >= self.Version.Optimized.value:
                     self.writer.uint32(str_crc32(entry.key))
                     
                 self.writer.string(entry.key)
@@ -227,7 +227,7 @@ class LocresFile:
         self.writer.set_pos(temp)
         self.writer.uint32(len(self._strings))
         
-        if self.version.value >= Version.Optimized.value:
+        if self.self.Version.value >= self.Version.Optimized.value:
             for string in self._strings:
                 self.writer.string(string)
                 self.writer.uint32(self._strings[string][0])

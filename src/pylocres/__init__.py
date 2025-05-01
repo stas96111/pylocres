@@ -1,1 +1,2 @@
-from .locres import LocresFile, Namespace, Entry, Version, entry_hash
+from .locres import LocresFile, Namespace, Entry, entry_hash
+from .locmeta import LocmetaFile
