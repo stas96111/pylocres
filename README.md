@@ -9,10 +9,11 @@ pip install pylocres
 ```
 or instal from repository
 
-## Usage
+## Locres Usage
 
 ```python
     from pylocres import LocresFile, Namespace, Entry, Version, entry_hash
+    LocresVersion = LocresFile.Version
 
     # create locrese instance
     locres = LocresFile()
@@ -50,10 +51,35 @@ or instal from repository
     locres.add(namespace)
 
     # set namespace (default last version is CityHash)   
-    locres.version = Version.CityHash
+    locres.version = LocresVersion.CityHash
 
     # save Locres file
     locres.write("./path/to/file.locres")
 
     # Done
+```
+
+## Locmeta Usage
+
+```python
+from pylocres import LocmetaFile
+LocmetaVersion = LocmetaFile.Version
+
+# create locrmeta instance
+locmeta = LocmetaFile()
+
+# read locmeta file
+locmeta.read("./path/to/file.locres")
+
+print(locmeta.version)
+print(locmeta.native_culture) # native language of game (en)
+print(locmeta.native_locres) # native language locres file (en/Game.locres)
+print(locmeta.compiled_cultures) # All compiled languages (["en", "de", "fr", ...])
+
+locmeta.native_culture = "YOUR_CULTURE"
+
+# write locmeta file
+locmeta.write("./path/to/file.locres")
+
+# Done
 ```
