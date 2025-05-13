@@ -12,8 +12,7 @@ or instal from repository
 ## Locres Usage
 
 ```python
-    from pylocres import LocresFile, Namespace, Entry, Version, entry_hash
-    LocresVersion = LocresFile.Version
+    from pylocres import LocresFile, Namespace, Entry, LocresVersion, entry_hash
 
     # create locrese instance
     locres = LocresFile()
@@ -62,8 +61,7 @@ or instal from repository
 ## Locmeta Usage
 
 ```python
-from pylocres import LocmetaFile
-LocmetaVersion = LocmetaFile.Version
+from pylocres import LocmetaFile, LocmetaVersion
 
 # create locrmeta instance
 locmeta = LocmetaFile()

@@ -8,17 +8,16 @@ import os
 
 LOCMETA_MAGIC = b'\x4F\xEE\x4C\xA1\x68\x48\x55\x83\x6C\x4C\x46\xBD\x70\xDA\x50\x7C'
 
+class LocmetaVersion(Enum):
+    V0 = 0
+    V1 = 1
 
 class LocmetaFile:
     """
     Class to read and write .locmeta files.
     """
-    
-    class Version(Enum):
-        V0 = 0
-        V1 = 1
 
-    def __init__(self, version: Version = Version.V1, native_culture: str = "en", native_locres: str = "en/Game.locres", compiled_cultures: list[str] = ["en"]):
+    def __init__(self, version: LocmetaVersion = LocmetaVersion.V1, native_culture: str = "en", native_locres: str = "en/Game.locres", compiled_cultures: list[str] = ["en"]):
         self.version = version
         self.native_culture = native_culture
         self.native_locres = native_locres
@@ -35,15 +34,15 @@ class LocmetaFile:
         if self.reader.read(16) != LOCMETA_MAGIC:
             raise ValueError("Invalid .locmeta file")
         
-        self.version = self.Version(self.reader.uint())
+        self.version = LocmetaVersion(self.reader.uint())
         
-        if self.version.value > self.Version.V1.value:
+        if self.version.value > LocmetaVersion.V1.value:
             raise ValueError("Unsupported .locmeta version")
         
         self.native_culture = self.reader.string()
         self.native_locres = self.reader.string()
         
-        if self.version.value == self.Version.V1.value:
+        if self.version.value == LocmetaVersion.V1.value:
             self.compiled_cultures = self.reader.strings_list()
         else:
             self.compiled_cultures = None
@@ -62,5 +61,5 @@ class LocmetaFile:
         self.writer.string(self.native_culture)
         self.writer.string(self.native_locres)
         
-        if self.version.value == self.Version.V1.value:
+        if self.version.value == LocmetaVersion.V1.value:
             self.writer.strings_list(self.compiled_cultures, True)
