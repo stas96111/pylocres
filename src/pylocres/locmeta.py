@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import IntEnum
 
 from .city_hash import CityHash
 from .crc_hash import str_crc32
@@ -8,7 +8,7 @@ import os
 
 LOCMETA_MAGIC = b'\x4F\xEE\x4C\xA1\x68\x48\x55\x83\x6C\x4C\x46\xBD\x70\xDA\x50\x7C'
 
-class LocmetaVersion(Enum):
+class LocmetaVersion(IntEnum):
     V0 = 0
     V1 = 1
 
@@ -36,13 +36,13 @@ class LocmetaFile:
         
         self.version = LocmetaVersion(self.reader.uint())
         
-        if self.version.value > LocmetaVersion.V1.value:
+        if self.version > LocmetaVersion.V1:
             raise ValueError("Unsupported .locmeta version")
         
         self.native_culture = self.reader.string()
         self.native_locres = self.reader.string()
         
-        if self.version.value == LocmetaVersion.V1.value:
+        if self.version == LocmetaVersion.V1:
             self.compiled_cultures = self.reader.strings_list()
         else:
             self.compiled_cultures = None
@@ -61,5 +61,5 @@ class LocmetaFile:
         self.writer.string(self.native_culture)
         self.writer.string(self.native_locres)
         
-        if self.version.value == LocmetaVersion.V1.value:
+        if self.version == LocmetaVersion.V1:
             self.writer.strings_list(self.compiled_cultures, True)
