@@ -1,83 +1,129 @@
-# PyLocres
-Python library for working with Unreal Engine .locres translation files. 
+# 🧩 PyLocres
 
-The library supports all versions of Locres
+[![Unreal Engine](https://img.shields.io/badge/Unreal%20Engine-%23313131.svg?logo=unrealengine&logoColor=white)](#)
+![PyPI](https://img.shields.io/pypi/v/pylocres.svg)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pylocres)
+![License](https://img.shields.io/github/license/stas96111/pylocres)
+![Downloads](https://img.shields.io/pypi/dm/pylocres)
 
-## Install
-```
+**PyLocres** is a Python library for reading, writing, and editing `.locres` and `.locmeta` files used in Unreal Engine's localization system.  
+Supports **all known versions** of Locres, including the latest.
+
+---
+
+## 📦 Installation
+
+Install from PyPI:
+
+```bash
 pip install pylocres
 ```
-or instal from repository
 
-## Locres Usage
+Or install directly from the repository:
+
+```bash
+git clone https://github.com/yourusername/pylocres.git
+cd pylocres
+pip install -r requirements.txt
+pip install .
+```
+
+---
+
+## 🛠️ Command Line Tool
+
+```bash
+# Show info about a .locres file
+pylocres info --path example.locres
+
+# Convert .locres to .csv
+pylocres to-csv --path example.locres --out output.csv
+
+# Convert .csv to .locres
+pylocres from-csv --path output.csv --out result.locres
+
+# Convert .locres to .po
+pylocres to-po --path example.locres --out output.po
+
+# Convert .po to .locres
+pylocres from-po --path output.po --out result.locres
+```
+
+---
+
+## 📘 Usage: Locres
 
 ```python
-    from pylocres import LocresFile, Namespace, Entry, LocresVersion, entry_hash
+from pylocres import LocresFile, Namespace, Entry, LocresVersion, entry_hash
 
-    # create locrese instance
-    locres = LocresFile()
+# Create Locres file instance
+locres = LocresFile()
 
-    # read locres file
-    locres.read("./path/to/file.locres")
+# Read a .locres file
+locres.read("path/to/file.locres")
 
-    # iterate over all Namespaces in locres 
-    for namespace in locres:
-        print(namespace.name) # print namespace name
-        # Usually, the standard name is “” (empty text), so 
-        # if the name is not displayed, everything is fine.
+# Iterate over all namespaces
+for namespace in locres:
+    print("Namespace:", namespace.name or "<default>")
 
-        # iterate over all Entrys in Namespace
-        for entry in namespace:
-            print(entry.key) # cf433749-2e... (uuid4 or custom key)
-            print(entry.translation) # Hello world!
-            print(entry.hash) # 828975897
-            # entry.hash - source localization hash (default: English),
-            # we can create our own hash if necessary, but it should be
-            # replaced only when the problem is in the game itself.
-            entry.hash = entry_hash("Hello world!")
+    # Iterate over all entries in the namespace
+    for entry in namespace:
+        print("Key:", entry.key) # cf433749-2e... (uuid4 or custom key)
+        print("Translation:", entry.translation) # Hello world!
+        print("Source Hash:", entry.hash) # 828975897
 
-            # set a new translation
-            entry.translation = "Привіт світ!"
+        # Set a new translation
+        entry.translation = "Привіт світ!"
 
-        # create new Entry
-        entry = Entry(key, translation, source_hash)
-        # add Entry to Namespace
-        namespace.add(entry)
+        # Optionally, recalculate source hash
+        entry.hash = entry_hash("Hello world!")
 
-    # create new Namespace
-    namespace = Namespace("UI")
-    # add Namespace to file
-    locres.add(namespace)
+# Create a new entry and add it to a namespace
+new_entry = Entry("my_key", "My translation", entry_hash("My source"))
+namespace.add(new_entry)
 
-    # set namespace (default last version is CityHash)   
-    locres.version = LocresVersion.CityHash
+# Add a new namespace
+new_namespace = Namespace("UI")
+locres.add(new_namespace)
 
-    # save Locres file
-    locres.write("./path/to/file.locres")
+# Set file format version (default: CityHash)
+locres.version = LocresVersion.CityHash
 
-    # Done
+# Save the modified locres file
+locres.write("path/to/output.locres")
+
+# Done
 ```
+
+---
 
 ## Locmeta Usage
 
 ```python
 from pylocres import LocmetaFile, LocmetaVersion
 
-# create locrmeta instance
+# Create Locmeta file instance
 locmeta = LocmetaFile()
 
-# read locmeta file
-locmeta.read("./path/to/file.locres")
+# Read a .locmeta file
+locmeta.read("path/to/file.locmeta")
 
-print(locmeta.version)
-print(locmeta.native_culture) # native language of game (en)
-print(locmeta.native_locres) # native language locres file (en/Game.locres)
-print(locmeta.compiled_cultures) # All compiled languages (["en", "de", "fr", ...])
+# View metadata
+print("Version:", locmeta.version)
+print("Native culture:", locmeta.native_culture) # en
+print("Native locres path:", locmeta.native_locres) # en/Game.locres
+print("Compiled cultures:", locmeta.compiled_cultures) # ["en", "de", "fr", ...]
 
-locmeta.native_culture = "YOUR_CULTURE"
+# Modify metadata
+locmeta.native_culture = "uk"
 
-# write locmeta file
-locmeta.write("./path/to/file.locres")
+# Save changes
+locmeta.write("path/to/output.locmeta")
 
 # Done
 ```
+
+---
+##  License
+MIT License
+© 2025 stas96111

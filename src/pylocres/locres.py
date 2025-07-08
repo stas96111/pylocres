@@ -36,7 +36,13 @@ class Namespace():
     
     def __getitem__(self, index) -> Entry:
         """Allow accessing items using indexing syntax"""
-        return self.entrys[index]
+        try:
+            return self.entrys[index]
+        except KeyError:
+            return None
+    
+    def __contains__(self, key) -> bool:
+        return key in self.entrys
     
     def __repr__(self) -> str:
         return f"Namespace: [{self.name}]"
@@ -59,13 +65,19 @@ class LocresFile:
     def __iter__(self) -> Iterator[Namespace]:
         return iter(self.namespaces.values())
     
-    def __len__(self):
+    def __len__(self) -> int:
         """Return the number of entries in the namespace"""
         return len(self.namespaces)
     
-    def __getitem__(self, index):
+    def __getitem__(self, index) -> Namespace:
         """Allow accessing items using indexing syntax"""
-        return self.namespaces[index]
+        try:
+            return self.namespaces[index]
+        except KeyError:
+            return None
+    
+    def __contains__(self, key) -> bool:
+        return key in self.namespaces
         
     def add(self, entry: Namespace):
         """Add a namespace to the file"""
@@ -147,7 +159,29 @@ class LocresFile:
                     translation = self.reader.string()
                     entry = Entry(string_key, translation, source_string_hash)
                     namespace.add(entry)
-                    
+                  
+                  
+    def to_binary(self):
+        super().__init__()
+        
+        self.writer = Writer()
+        
+        self._write_header()
+        self._make_string_dict()
+        if self.version == LocresVersion.Legacy:
+            self._save_legacy()
+            data = self.writer.file.getvalue()
+            self.writer.close()
+            
+            return data
+        self._write_keys()
+        self._write_text()
+        
+        data = self.writer.file.getvalue()
+        self.writer.close()
+        
+        return data
+      
         
     def write(self, path):
         """Write the contents of the LocresFile to a .locres file.
@@ -166,6 +200,9 @@ class LocresFile:
             return
         self._write_keys()
         self._write_text()
+        
+        self.writer.close()
+        
     
     def _write_header(self):
         if self.version >= LocresVersion.Compact:
@@ -215,7 +252,7 @@ class LocresFile:
                     self.writer.uint32(CityHash.city_hash_64_utf16_to_uint32(entry.key))
                 elif self.version >= LocresVersion.Optimized:
                     self.writer.uint32(str_crc32(entry.key))
-                    
+                
                 self.writer.string(entry.key)
                 self.writer.uint32(int(entry.hash))
                 self.writer.uint32(entry._string_index)

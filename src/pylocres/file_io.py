@@ -64,8 +64,11 @@ class Reader:
         
         
 class Writer:
-    def __init__(self, path):
-        self.file = open(path, "wb")
+    def __init__(self, file = None):
+        if isinstance(file, str):
+            self.file = open(file, "wb")
+        else:
+            self.file = BytesIO()
         
     def get_pos(self):
         return self.file.tell()
