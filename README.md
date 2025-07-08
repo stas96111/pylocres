@@ -22,7 +22,7 @@ pip install pylocres
 Or install directly from the repository:
 
 ```bash
-git clone https://github.com/yourusername/pylocres.git
+git clone https://github.com/stas96111/pylocres.git
 cd pylocres
 pip install -r requirements.txt
 pip install .
