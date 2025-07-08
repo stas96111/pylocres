@@ -5,22 +5,14 @@ from .locres import LocresFile, Namespace, Entry, LocresVersion
 
 
 @click.group()
-@click.version_option("0.1.4", prog_name="pylocres")
-@click.pass_context
-def cli(ctx, verbose):
+@click.version_option("0.1.5", prog_name="pylocres")
+def cli():
     """🗂️  pylocres — A CLI tool for working with Unreal Engine .locres files"""
-    ctx.ensure_object(dict)
-    ctx.obj['VERBOSE'] = verbose
-
-
-def echo(msg, ctx=None):
-    if ctx and ctx.obj.get("VERBOSE"):
-        click.secho(msg, fg="yellow")
+    pass
 
 
 @cli.command("info", help="📄 Display metadata about the given .locres file.")
 @click.option("--path", "-p", type=click.Path(exists=True), required=True, help="Path to the .locres file.")
-@click.pass_context
 def info(ctx, path):
     try:
         locres = LocresFile()
@@ -36,7 +28,6 @@ def info(ctx, path):
 @cli.command("to-csv", help="📤 Export a .locres file to a .csv file.")
 @click.option("--path", "-p", type=click.Path(exists=True), required=True, help="Input .locres file path.")
 @click.option("--out", "-o", type=click.Path(), default="output.csv", help="Output .csv file path.")
-@click.pass_context
 def to_csv(ctx, path, out):
     try:
         locres = LocresFile()
@@ -59,7 +50,6 @@ def to_csv(ctx, path, out):
 @click.option("--path", "-p", type=click.Path(exists=True), required=True, help="Input .csv file path.")
 @click.option("--out", "-o", type=click.Path(), default="output.locres", help="Output .locres file path.")
 @click.option("--ver", "-v", type=click.IntRange(0, 3), default=3, help="Locres version (0–3).")
-@click.pass_context
 def from_csv(ctx, path, out, ver):
     try:
         locres = LocresFile()
@@ -88,7 +78,6 @@ def from_csv(ctx, path, out, ver):
 @cli.command("to-po", help="📤 Convert a .locres file to a .po file (gettext format).")
 @click.option("--path", "-p", type=click.Path(exists=True), required=True, help="Input .locres file path.")
 @click.option("--out", "-o", type=click.Path(), default="output.po", help="Output .po file path.")
-@click.pass_context
 def to_po(ctx, path, out):
     try:
         locres = LocresFile()
@@ -114,7 +103,6 @@ def to_po(ctx, path, out):
 @click.option("--path", "-p", type=click.Path(exists=True), required=True, help="Input .po file path.")
 @click.option("--out", "-o", type=click.Path(), default="output.locres", help="Output .locres file path.")
 @click.option("--ver", "-v", type=click.IntRange(0, 3), default=3, help="Locres version (0–3).")
-@click.pass_context
 def from_po(ctx, path, out, ver):
     try:
         locres = LocresFile()
@@ -138,7 +126,45 @@ def from_po(ctx, path, out, ver):
         click.secho(f"✅ Locres file created at {out}", fg="green")
     except Exception as e:
         click.secho(f"❌ Error: {e}", err=True, fg="red")
+        
+        
+@cli.command("fix-hashes", help="🔧 Replace hashes in a .locres using original source language file.")
+@click.option("--path", "-p", type=click.Path(exists=True), required=True, help="Path to translated or modified .locres.")
+@click.option("--source_file", "-s", type=click.Path(exists=True), required=True, help="Path to original source .locres file.")
+@click.option("--out", "-o", type=click.Path(), default="fixed.locres", help="Output path for updated locres.")
+def fix_hashes(path, source_file, out):
+    """Fixes hashes in the modified locres file using those from the source."""
+    try:
+        source_locres = LocresFile()
+        source_locres.read(path)
 
+        mod_locres = LocresFile()
+        mod_locres.read(source_file)
+
+        fixed = 0
+        total = 0
+
+        for mod_ns in mod_locres:
+            src_ns = source_locres[mod_ns.name] if mod_ns.name in source_locres else None
+            if not src_ns:
+                continue
+
+            src_entries_by_key = {e.key: e for e in src_ns}
+
+            for mod_entry in mod_ns:
+                total += 1
+                src_entry = src_entries_by_key.get(mod_entry.key)
+                if src_entry and mod_entry.hash != src_entry.hash:
+                    mod_entry.hash = src_entry.hash
+                    fixed += 1
+
+        mod_locres.write(out)
+
+        click.secho(f"✅ Hashes fixed: {fixed} of {total} entries updated.", fg="green")
+        click.secho(f"📁 Output saved to: {out}", fg="cyan")
+
+    except Exception as e:
+        click.secho(f"❌ Error: {e}", fg="red", err=True)
 
 if __name__ == "__main__":
     cli()

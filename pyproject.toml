@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pylocres"
-version = "0.1.4"
+version = "0.1.5"
 authors = [
   { name = "stas96111", email = "stas96111@gmail.com" },
 ]
@@ -12,8 +12,8 @@ description = "Python library for working with Unreal Engine .locres translation
 readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [
-    "click>=8.2.1",
-    "polib>=1.2.0"
+    "click>=8.2",
+    "polib>=1.2"
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
