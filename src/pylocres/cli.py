@@ -5,7 +5,7 @@ from .locres import LocresFile, Namespace, Entry, LocresVersion
 
 
 @click.group()
-@click.version_option("0.1.5", prog_name="pylocres")
+@click.version_option("0.1.6", prog_name="pylocres")
 def cli():
     """🗂️  pylocres — A CLI tool for working with Unreal Engine .locres files"""
     pass
@@ -13,7 +13,7 @@ def cli():
 
 @cli.command("info", help="📄 Display metadata about the given .locres file.")
 @click.option("--path", "-p", type=click.Path(exists=True), required=True, help="Path to the .locres file.")
-def info(ctx, path):
+def info(path):
     try:
         locres = LocresFile()
         locres.read(path)
@@ -28,7 +28,7 @@ def info(ctx, path):
 @cli.command("to-csv", help="📤 Export a .locres file to a .csv file.")
 @click.option("--path", "-p", type=click.Path(exists=True), required=True, help="Input .locres file path.")
 @click.option("--out", "-o", type=click.Path(), default="output.csv", help="Output .csv file path.")
-def to_csv(ctx, path, out):
+def to_csv(path, out):
     try:
         locres = LocresFile()
         locres.read(path)
@@ -50,7 +50,7 @@ def to_csv(ctx, path, out):
 @click.option("--path", "-p", type=click.Path(exists=True), required=True, help="Input .csv file path.")
 @click.option("--out", "-o", type=click.Path(), default="output.locres", help="Output .locres file path.")
 @click.option("--ver", "-v", type=click.IntRange(0, 3), default=3, help="Locres version (0–3).")
-def from_csv(ctx, path, out, ver):
+def from_csv(path, out, ver):
     try:
         locres = LocresFile()
         locres.version = LocresVersion(ver)
@@ -78,7 +78,7 @@ def from_csv(ctx, path, out, ver):
 @cli.command("to-po", help="📤 Convert a .locres file to a .po file (gettext format).")
 @click.option("--path", "-p", type=click.Path(exists=True), required=True, help="Input .locres file path.")
 @click.option("--out", "-o", type=click.Path(), default="output.po", help="Output .po file path.")
-def to_po(ctx, path, out):
+def to_po(path, out):
     try:
         locres = LocresFile()
         locres.read(path)
@@ -103,7 +103,7 @@ def to_po(ctx, path, out):
 @click.option("--path", "-p", type=click.Path(exists=True), required=True, help="Input .po file path.")
 @click.option("--out", "-o", type=click.Path(), default="output.locres", help="Output .locres file path.")
 @click.option("--ver", "-v", type=click.IntRange(0, 3), default=3, help="Locres version (0–3).")
-def from_po(ctx, path, out, ver):
+def from_po(path, out, ver):
     try:
         locres = LocresFile()
         locres.version = LocresVersion(ver)
