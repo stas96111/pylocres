@@ -6,60 +6,76 @@ from .file_io import Reader, Writer
 
 import os
 
-LOCMETA_MAGIC = b'\x4F\xEE\x4C\xA1\x68\x48\x55\x83\x6C\x4C\x46\xBD\x70\xDA\x50\x7C'
+LOCMETA_MAGIC = b"\x4f\xee\x4c\xa1\x68\x48\x55\x83\x6c\x4c\x46\xbd\x70\xda\x50\x7c"
+
 
 class LocmetaVersion(IntEnum):
     V0 = 0
     V1 = 1
+    V2 = 2
+
 
 class LocmetaFile:
     """
     Class to read and write .locmeta files.
     """
 
-    def __init__(self, version: LocmetaVersion = LocmetaVersion.V1, native_culture: str = "en", native_locres: str = "en/Game.locres", compiled_cultures: list[str] = ["en"]):
+    def __init__(
+        self,
+        version: LocmetaVersion = LocmetaVersion.V1,
+        native_culture: str = "en",
+        native_locres: str = "en/Game.locres",
+        compiled_cultures: list[str] = ["en"],
+    ):
         self.version = version
         self.native_culture = native_culture
         self.native_locres = native_locres
         self.compiled_cultures = compiled_cultures
-        
+        self.bIsUGC = False
+
     def read(self, path: str):
         """
         Read a .locmeta file.
-        
+
         :param path: The path to the .locmeta file to read
         """
         self.reader = Reader(path)
-        
+
         if self.reader.read(16) != LOCMETA_MAGIC:
             raise ValueError("Invalid .locmeta file")
-        
+
         self.version = LocmetaVersion(self.reader.uint())
-        
+
         if self.version > LocmetaVersion.V1:
             raise ValueError("Unsupported .locmeta version")
-        
+
         self.native_culture = self.reader.string()
         self.native_locres = self.reader.string()
-        
+
         if self.version == LocmetaVersion.V1:
             self.compiled_cultures = self.reader.strings_list()
         else:
             self.compiled_cultures = None
-            
+
+        if self.version == LocmetaVersion.V2:
+            self.bIsUGC = self.reader.bool()
+
     def write(self, path: str):
         """
         Write a .locmeta file.
-        
+
         :param path: The path to the .locmeta file to write to
         """
         self.writer = Writer(path)
-        
+
         self.writer.write(LOCMETA_MAGIC)
         self.writer.uint(self.version.value)
-        
+
         self.writer.string(self.native_culture)
         self.writer.string(self.native_locres)
-        
+
         if self.version == LocmetaVersion.V1:
             self.writer.strings_list(self.compiled_cultures, True)
+
+        if self.version == LocmetaVersion.V2:
+            self.writer.bool(self.bIsUGC)
