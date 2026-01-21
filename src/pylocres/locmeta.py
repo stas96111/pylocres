@@ -69,7 +69,7 @@ class LocmetaFile:
         self.writer = Writer(path)
 
         self.writer.write(LOCMETA_MAGIC)
-        self.writer.uint(self.version.value)
+        self.writer.uint8(self.version.value)
 
         self.writer.string(self.native_culture)
         self.writer.string(self.native_locres)
