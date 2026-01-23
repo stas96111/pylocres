@@ -1,5 +1,16 @@
 import nox
 
+try:
+    import tomllib
+except ImportError:
+    import tomli as tomllib
+
+
+def get_version():
+    with open("pyproject.toml", "rb") as f:
+        data = tomllib.load(f)
+    return data["project"]["version"]
+
 
 @nox.session(venv_backend="venv")
 def tests(session):
@@ -36,7 +47,9 @@ def release(session):
         "python", "-c", "import shutil; shutil.rmtree('dist', ignore_errors=True)"
     )
     session.run("python", "-m", "build")
+    session.run("twine", "upload", "dist/*")
 
-    session.run("twine", "check", "dist/*")
+    session.run("git", "tag", f"v{get_version()}")
+    session.run("git", "push", "--tags")
 
     twine(session)
