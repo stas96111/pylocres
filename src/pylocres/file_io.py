@@ -321,7 +321,12 @@ class Writer:
         new_size = max(self.size * 2, self.pos + needed)
 
         if self._mm is not None:
+            if self._view is not None:
+                self._view.release()
+                self._view = None
+
             self._mm.resize(new_size)
+
             self._view = memoryview(self._mm)
         else:
             self._buf.extend(b"\x00" * (new_size - self.size))
