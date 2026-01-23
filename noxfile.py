@@ -26,6 +26,7 @@ def install(session):
     session.install("-e", ".")
 
 
+@nox.session(venv_backend="venv")
 def twine(session):
     session.run(
         "python", "-c", "import shutil; shutil.rmtree('dist', ignore_errors=True)"
@@ -36,6 +37,7 @@ def twine(session):
     session.run("twine", "upload", "dist/*")
 
 
+@nox.session(venv_backend="venv")
 def release(session):
     session.install("twine")
     session.install("pytest")
