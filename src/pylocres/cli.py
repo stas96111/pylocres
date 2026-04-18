@@ -55,7 +55,7 @@ def to_csv(path, out):
         locres = LocresFile()
         locres.read(path)
 
-        with open(out, "w", newline="", encoding="utf-16le") as csvfile:
+        with open(out, "w", newline="", encoding="utf-8") as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(["key", "hash", "source", "translation"])
 
@@ -95,7 +95,7 @@ def from_csv(path, out, ver):
         locres = LocresFile()
         locres.version = LocresVersion(ver)
 
-        with open(path, "r", newline="", encoding="utf-16le") as csvfile:
+        with open(path, "r", newline="", encoding="utf-8") as csvfile:
             reader = csv.DictReader(csvfile)
 
             for row in reader:
