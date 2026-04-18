@@ -222,10 +222,10 @@ def fix_hashes(path, source_file, out):
     """Fixes hashes in the modified locres file using those from the source."""
     try:
         source_locres = LocresFile()
-        source_locres.read(path)
+        source_locres.read(source_file)
 
         mod_locres = LocresFile()
-        mod_locres.read(source_file)
+        mod_locres.read(path)
 
         fixed = 0
         total = 0
