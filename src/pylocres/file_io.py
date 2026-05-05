@@ -238,7 +238,7 @@ class Reader:
         return [func(self) for _ in range(length)]
 
     def strings_list(self, length=None):
-        return self.list(self.string, length=length)
+        return self.list(Reader.string, length=length)
 
     def buffer(self, offset, size):
         data = self._view[offset : offset + size].tobytes()
