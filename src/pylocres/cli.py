@@ -5,7 +5,7 @@ from .locres import LocresFile, Namespace, Entry, LocresVersion
 
 
 @click.group()
-@click.version_option("0.1.6", prog_name="pylocres")
+@click.version_option("0.1.9.2", prog_name="pylocres")
 def cli():
     """🗂️  pylocres - A CLI tool for working with Unreal Engine .locres files"""
     pass
