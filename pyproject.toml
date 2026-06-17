@@ -14,7 +14,7 @@ requires-python = ">=3.8"
 dependencies = [
     "click>=8.2",
     "polib>=1.2",
-    "binsl==1.2"
+    "binsl==0.1.2"
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
