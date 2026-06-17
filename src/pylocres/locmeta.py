@@ -1,10 +1,10 @@
+import os
 from enum import IntEnum
 
 from .city_hash import CityHash
 from .crc_hash import str_crc32
-from .file_io import Reader, Writer
-
-import os
+from .file_io import FString
+from binsl import BinReader, BinWriter
 
 LOCMETA_MAGIC = b"\x4f\xee\x4c\xa1\x68\x48\x55\x83\x6c\x4c\x46\xbd\x70\xda\x50\x7c"
 
@@ -39,26 +39,26 @@ class LocmetaFile:
 
         :param path: The path to the .locmeta file to read
         """
-        self.reader = Reader(path)
+        
+        with BinReader(path) as BR:
+            if BR.read(16) != LOCMETA_MAGIC:
+                raise ValueError("Invalid .locmeta file")
 
-        if self.reader.read(16) != LOCMETA_MAGIC:
-            raise ValueError("Invalid .locmeta file")
+            self.version = LocmetaVersion(BR.uint8())
 
-        self.version = LocmetaVersion(self.reader.uint())
+            if self.version > LocmetaVersion.V1:
+                raise ValueError("Unsupported .locmeta version")
 
-        if self.version > LocmetaVersion.V1:
-            raise ValueError("Unsupported .locmeta version")
+            self.native_culture = FString.read(BR)
+            self.native_locres = FString.read(BR)
 
-        self.native_culture = self.reader.string()
-        self.native_locres = self.reader.string()
+            if self.version == LocmetaVersion.V1:
+                self.compiled_cultures = BR.list(FString.read)
+            else:
+                self.compiled_cultures = None
 
-        if self.version == LocmetaVersion.V1:
-            self.compiled_cultures = self.reader.strings_list()
-        else:
-            self.compiled_cultures = None
-
-        if self.version == LocmetaVersion.V2:
-            self.bIsUGC = self.reader.bool()
+            if self.version == LocmetaVersion.V2:
+                self.bIsUGC = BR.bool()
 
     def write(self, path: str):
         """
@@ -66,16 +66,15 @@ class LocmetaFile:
 
         :param path: The path to the .locmeta file to write to
         """
-        self.writer = Writer(path)
+        with BinWriter(path) as BW:
+            BW.write(LOCMETA_MAGIC)
+            BW.uint8(self.version.value)
 
-        self.writer.write(LOCMETA_MAGIC)
-        self.writer.uint8(self.version.value)
+            FString.write(BW, self.native_culture)
+            FString.write(BW, self.native_locres)
 
-        self.writer.string(self.native_culture)
-        self.writer.string(self.native_locres)
+            if self.version == LocmetaVersion.V1:
+                BW.list(self.compiled_cultures, FString.write)
 
-        if self.version == LocmetaVersion.V1:
-            self.writer.strings_list(self.compiled_cultures, True)
-
-        if self.version == LocmetaVersion.V2:
-            self.writer.bool(self.bIsUGC)
+            if self.version == LocmetaVersion.V2:
+                BW.bool(self.bIsUGC)

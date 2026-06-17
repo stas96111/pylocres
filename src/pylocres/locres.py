@@ -1,11 +1,12 @@
-from typing import Iterator
 from enum import IntEnum
+from pathlib import Path
+from typing import Iterator
+
+from binsl import BinReader, BinWriter, Position
 
 from .city_hash import CityHash
 from .crc_hash import str_crc32
-from .file_io import Reader, Writer
-
-from pathlib import Path
+from .file_io import FString
 
 LOCRES_MAGIC = b"\x0e\x14\x74\x75\x67\x4a\x03\xfc\x4a\x15\x90\x9d\xc3\x37\x7f\x1b"
 
@@ -15,7 +16,6 @@ class LocresVersion(IntEnum):
     Compact = 1
     Optimized = 2
     CityHash = 3
-
 
 class Entry:
     def __init__(self, key, translation, value, is_hash=True):
@@ -97,128 +97,105 @@ class LocresFile:
         :param path: The path to the .locres file
         """
 
-        if isinstance(file, Path):
-            file = str(file)
-
         self.namespaces = {}
         self._offset = None
         self._strings = []
+        
+        with BinReader(file) as BR:
+            self.read_header(BR)
 
-        self.reader = Reader(file)
-        self._read_header()
+            if self.version >= LocresVersion.Compact:
+                self.read_strings(BR)
 
-        if self.version >= LocresVersion.Compact:
-            self._read_strings()
+            self.read_keys(BR)
 
-        self._read_keys()
-        self.reader.close()
-
-    def _read_header(self):
-        if self.reader.read(16) == LOCRES_MAGIC:
-            self.version = LocresVersion(self.reader.uint())
-            self._offset = self.reader.uint64()
+    def read_header(self, BR: BinReader):
+        if BR.read(16) == LOCRES_MAGIC:
+            self.version = LocresVersion(BR.uint8())
+            self._offset = BR.uint64()
         else:
             self.version = LocresVersion.Legacy
 
-    def _read_strings(self):
-        self.reader.set_pos(self._offset)
-        string_count = self.reader.uint32()
+    def read_strings(self, BR: BinReader):
+        BR.set_pos(self._offset)
+        string_count = BR.uint32()
 
         for i in range(string_count):
-            string = self.reader.string()
+            string = FString.read(BR)
             if self.version >= LocresVersion.Optimized:
-                string_count = self.reader.uint32()
+                reference_count = BR.uint32()
             self._strings.append(string)
 
-    def _read_keys(self):
+    def read_keys(self, BR: BinReader):
         if self.version == LocresVersion.Legacy:
-            self.reader.set_pos(0)
+            BR.set_pos(0, Position.SET)
 
         if self.version >= LocresVersion.Compact:
-            self.reader.set_pos(25)
+            BR.set_pos(25, Position.SET)
 
         if self.version >= LocresVersion.Optimized:
-            entrys_count = self.reader.uint32()
+            entrys_count = BR.uint32()
 
-        namespace_count = self.reader.uint32()
+        namespace_count = BR.uint32()
 
         for i in range(namespace_count):
             if self.version >= LocresVersion.Optimized:
-                namespace_key_hash = self.reader.uint32()
+                namespace_key_hash = BR.uint32()
 
-            namespace = Namespace(self.reader.string())
+            namespace = Namespace(FString.read(BR))
             self.add(namespace)
-            key_count = self.reader.uint32()
+            key_count = BR.uint32()
 
             for j in range(key_count):
                 if self.version >= LocresVersion.Optimized:
-                    string_key_hash = self.reader.uint32()
+                    string_key_hash = BR.uint32()
 
-                string_key = self.reader.string()
-                source_string_hash = self.reader.uint32()
+                string_key = FString.read(BR)
+                source_string_hash = BR.uint32()
 
                 if self.version >= LocresVersion.Compact:
-                    string_index = self.reader.uint32()
+                    string_index = BR.uint32()
                     entry = Entry(
                         string_key, self._strings[string_index], source_string_hash
                     )
                     namespace.add(entry)
                 else:
-                    translation = self.reader.string()
+                    translation = FString.read(BR)
                     entry = Entry(string_key, translation, source_string_hash)
                     namespace.add(entry)
 
     def to_binary(self):
-        super().__init__()
+        with BinWriter() as BW:
+            self.write_header(BW)
+            self.make_string_dict()
+            if self.version == LocresVersion.Legacy:
+                self.save_legacy(BW)
+                return BW.get_bytes()
+            self.write_keys(BW)
+            self.write_text(BW)
+            return BW.get_bytes()
 
-        self.writer = Writer()
-
-        self._write_header()
-        self._make_string_dict()
-        if self.version == LocresVersion.Legacy:
-            self._save_legacy()
-            data = self.writer.getvalue()
-            self.writer.close()
-
-            return data
-        self._write_keys()
-        self._write_text()
-
-        data = self.writer.getvalue()
-        self.writer.close()
-
-        return data
-
-    def write(self, path: str | Path):
+    def write(self, file: str | Path):
         """Write the contents of the LocresFile to a .locres file.
 
         :param path: The path to the .locres file to write to
         """
-        super().__init__()
+        with BinWriter(file) as BW:
+            self.write_header(BW)
+            self.make_string_dict()
+            if self.version == LocresVersion.Legacy:
+                self.save_legacy(BW)
+                return
+            self.write_keys(BW)
+            self.write_text(BW)
 
-        if isinstance(path, Path):
-            path = str(path)
-
-        self.writer = Writer(path)
-
-        self._write_header()
-        self._make_string_dict()
-        if self.version == LocresVersion.Legacy:
-            self._save_legacy()
-            self.writer.close()
-            return
-        self._write_keys()
-        self._write_text()
-
-        self.writer.close()
-
-    def _write_header(self):
+    def write_header(self, BW: BinWriter):
         if self.version >= LocresVersion.Compact:
-            self.writer.write(LOCRES_MAGIC)
-            self.writer.uint8(self.version.value)
-            self.writer.write(b"\x00" * 8)
+            BW.write(LOCRES_MAGIC)
+            BW.uint8(self.version.value)
+            BW.write(b"\x00" * 8)
 
-    def _make_string_dict(self):
+    def make_string_dict(self):
         self._strings = {}
         string_count = 0
 
@@ -236,60 +213,59 @@ class LocresFile:
             for entry in namespace:
                 entry._string_index = self._strings[entry.translation][1]
 
-    def _write_keys(self):
+    def write_keys(self, BW: BinWriter):
         keys_count = 0
         for namespace in self:
             keys_count += len(namespace)
         if self.version >= LocresVersion.Optimized:
-            self.writer.uint32(keys_count)
-        self.writer.uint32(len(self))
+            BW.uint32(keys_count)
+        BW.uint32(len(self))
 
         for namespace in self:
             if self.version == LocresVersion.CityHash:
                 namespace_hash = CityHash.city_hash_64_utf16_to_uint32(namespace.name)
-                self.writer.uint32(namespace_hash)
+                BW.uint32(namespace_hash)
             elif self.version >= LocresVersion.Optimized:
                 namespace_hash = str_crc32(namespace.name)
-                self.writer.uint32(namespace_hash)
+                BW.uint32(namespace_hash)
 
-            self.writer.string(namespace.name)
-            self.writer.uint32(len(namespace))
+            FString.write(BW, namespace.name)
+            BW.uint32(len(namespace))
 
             for entry in namespace:
                 if self.version == LocresVersion.CityHash:
-                    self.writer.uint32(CityHash.city_hash_64_utf16_to_uint32(entry.key))
+                    BW.uint32(CityHash.city_hash_64_utf16_to_uint32(entry.key))
                 elif self.version >= LocresVersion.Optimized:
-                    self.writer.uint32(str_crc32(entry.key))
+                    BW.uint32(str_crc32(entry.key))
 
-                self.writer.string(entry.key)
-                self.writer.uint32(int(entry.hash))
-                self.writer.uint32(entry._string_index)
+                FString.write(BW, entry.key)
+                BW.uint32(int(entry.hash))
+                BW.uint32(entry._string_index)
 
-    def _write_text(self):
-        temp = self.writer.get_pos()
-        self.writer.set_pos(17)
-        self.writer.uint64(temp)
-        self.writer.set_pos(temp)
-        self.writer.uint32(len(self._strings))
+    def write_text(self, BW: BinWriter):
+        text_offset = BW.get_pos()
+        with BW.at(17) as BWT: 
+            BWT.uint64(text_offset)
+        BW.uint32(len(self._strings))
 
         if self.version >= LocresVersion.Optimized:
             for string in self._strings:
-                self.writer.string(string)
-                self.writer.uint32(self._strings[string][0])
+                FString.write(BW, string)
+                BW.uint32(self._strings[string][0])
         else:
             for string in self._strings:
-                self.writer.string(string)
+                FString.write(BW, string)
 
-    def _save_legacy(self):
-        self.writer.uint32(len(self))
+    def save_legacy(self, BW: BinWriter):
+        BW.uint32(len(self))
 
         for namespace in self:
-            self.writer.string(namespace.name, use_unicode=True)
-            self.writer.uint32(len(namespace))
+            FString.write(BW, namespace.name, True)
+            BW.uint32(len(namespace))
             for entry in namespace:
-                self.writer.string(entry.key)
-                self.writer.uint32(entry.hash)
-                self.writer.string(entry.translation)
+                FString.write(BW, entry.key)
+                BW.uint32(entry.hash)
+                FString.write(BW, entry.translation)
 
 
 def entry_hash(text):

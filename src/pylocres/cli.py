@@ -1,7 +1,9 @@
-import click
 import csv
+
+import click
 import polib
-from .locres import LocresFile, Namespace, Entry, LocresVersion
+
+from .locres import Entry, LocresFile, LocresVersion, Namespace
 
 
 @click.group()

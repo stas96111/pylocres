@@ -1,6 +1,6 @@
+from pylocres import LocresFile, LocresVersion
 from pylocres.city_hash import CityHash
 from pylocres.crc_hash import str_crc32
-from pylocres import LocresFile, LocresVersion
 
 
 def test_city_hash_values():
